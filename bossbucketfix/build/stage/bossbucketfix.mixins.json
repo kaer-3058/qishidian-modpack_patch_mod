@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.bossbucketfix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LLibraryBossMonsterMixin",
+    "IABossMonsterMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

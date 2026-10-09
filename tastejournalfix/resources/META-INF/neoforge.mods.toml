@@ -1,0 +1,25 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "tastejournalfix"
+version = "1.1.1"
+displayName = "Taste Journal Fix"
+description = "Stops tastejournal from stamping custom_data.tastejournal onto every crafted and smelted item, and shows the remaining homemade marker in the tooltip. tastejournal hooks ItemCraftedEvent and ItemSmeltedEvent to mark 'homemade food', but never checks that the item is actually food, so planks, sticks, glass and everything else get a player-UUID tag. Because 1.20.5+ compares the whole component patch for stacking, the tagged stacks can no longer merge with untagged ones - and because vanilla only passes the taken stack on mouse pickup (not on shift-click), the same craft yields tagged or untagged items depending on how you click. This mod strips the tag from anything that is not food or a drink, and adds a tooltip line explaining the non-stacking for the food that legitimately keeps it."
+
+authors = "tastejournalfix"
+
+[[dependencies.tastejournalfix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.tastejournalfix]]
+modId = "tastejournal"
+type = "required"
+versionRange = "[0.9,)"
+ordering = "AFTER"
+side = "BOTH"

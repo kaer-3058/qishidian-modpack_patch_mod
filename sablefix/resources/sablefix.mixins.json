@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.sablefix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ActiveSableCompanionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

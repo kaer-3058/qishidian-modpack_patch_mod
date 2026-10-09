@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.createpkgfix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "PackageEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

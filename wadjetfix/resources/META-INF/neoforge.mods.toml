@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "wadjetfix"
+version = "1.0.1"
+displayName = "Wadjet Fix"
+description = "Fixes a non-terminating loop in lionfishapi DynamicChain.wrapAngles that spins the render thread at 100% CPU and freezes the game (triggered by the Cataclysm Wadjet entity)."
+authors = "wadjetfix"
+
+[[mixins]]
+config = "wadjetfix.mixins.json"
+
+[[dependencies.wadjetfix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.wadjetfix]]
+modId = "lionfishapi"
+type = "required"
+versionRange = "[1.0,)"
+ordering = "AFTER"
+side = "BOTH"

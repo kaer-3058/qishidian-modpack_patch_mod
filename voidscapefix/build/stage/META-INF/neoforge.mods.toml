@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "voidscapefix"
+version = "1.0.0"
+displayName = "Voidscape Network Blocker"
+description = "Stops Voidscape from doing blocking web requests. DonatorHandler fetches https://gh.tamaized.com/Tamaized/Voidscape/donator.properties and is joined on the CLIENT TICK on the render thread; when that HTTP read never returns the whole game freezes. This mod cancels the fetch and makes getDonators()/isDonator() return an empty list instead of calling CompletableFuture.join(), and stops ModUpdateURLInterceptor from installing its update.json URL into NeoForge's ModInfo."
+authors = "voidscapefix"
+
+[[mixins]]
+config = "voidscapefix.mixins.json"
+
+[[dependencies.voidscapefix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.voidscapefix]]
+modId = "voidscape"
+type = "optional"
+versionRange = "[1,)"
+ordering = "BEFORE"
+side = "BOTH"

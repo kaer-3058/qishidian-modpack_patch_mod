@@ -1,0 +1,13 @@
+﻿built     : 2026-10-05 16:58:18
+javac     : javac 21.0.7
+classpath : real runtime jars, no hand-written stubs
+  neoforgeClient  E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\neoforged\neoforge\21.1.249\neoforge-21.1.249-client.jar
+  neoforgeUni     E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\neoforged\neoforge\21.1.249\neoforge-21.1.249-universal.jar
+  minecraftSrg    E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\minecraft\client\1.21.1-20240808.144430\client-1.21.1-20240808.144430-srg.jar
+  bus             E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\neoforged\bus\8.0.5\bus-8.0.5.jar
+  fmlLoader       E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\neoforged\fancymodloader\loader\4.0.44\loader-4.0.44.jar
+  spongeMixin     E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\fabricmc\sponge-mixin\0.15.2+mixin.0.8.7\sponge-mixin-0.15.2+mixin.0.8.7.jar
+  slf4jApi        E:\MC文件\起始点 132231123321321231\.minecraft\libraries\org\slf4j\slf4j-api\2.0.9\slf4j-api-2.0.9.jar
+  distmarkerApi   E:\MC文件\起始点 132231123321321231\.minecraft\libraries\net\neoforged\mergetool\2.0.0\mergetool-2.0.0-api.jar
+  cataclysm       E:\MC文件\起始点 132231123321321231\.minecraft\versions\起始点\mods\灾变 结构重置 v.04.jar
+jar       : E:\MC文件\起始点 132231123321321231\相关文件\DeepSeek写的mod\bossbucketfix\artifacts\bossbucketfix-1.0.0.jar

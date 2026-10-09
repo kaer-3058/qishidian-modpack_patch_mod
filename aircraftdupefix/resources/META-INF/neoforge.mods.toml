@@ -1,0 +1,38 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "aircraftdupefix"
+version = "1.0.0"
+displayName = "Aircraft Dupe Fix"
+authors = "DeepSeek"
+description = '''
+Stops the immersive_aircraft vehicle duplication exploit on multiplayer servers.
+
+On logout vanilla stores the vehicle a player is riding -- the full NBT, which for
+immersive_aircraft includes the whole cargo inventory -- in the player data RootVehicle
+field, and on the next login it rebuilds that vehicle and adds it to the world. That is
+what produces the duplicate ship with all of its contents.
+
+This mod dismounts the player from any immersive_aircraft vehicle during
+PlayerLoggedOutEvent. That event fires BEFORE the player data is saved, so nothing is
+written and nothing can be rebuilt. On login the player is put back onto the already
+existing ship, so relogging in mid-air does not drop the player.
+
+No mixins, no bytecode patching, no compile-time dependency on immersive_aircraft.
+'''
+
+[[dependencies.aircraftdupefix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.aircraftdupefix]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.22)"
+ordering = "NONE"
+side = "BOTH"

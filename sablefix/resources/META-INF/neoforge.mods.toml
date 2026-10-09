@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "sablefix"
+version = "1.0.0"
+displayName = "Sable Fix"
+description = "Fixes a NullPointerException in Sable 2.0.5 that crashes the game every time you leave a world. Sable's GameRendererMixin reads minecraft.player (null after disconnecting) and passes it straight into ActiveSableCompanion.getTrackingSubLevel, which dereferences it unconditionally."
+authors = "sablefix"
+
+[[mixins]]
+config = "sablefix.mixins.json"
+
+[[dependencies.sablefix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.sablefix]]
+modId = "sable"
+type = "required"
+versionRange = "[1.0,)"
+ordering = "AFTER"
+side = "BOTH"

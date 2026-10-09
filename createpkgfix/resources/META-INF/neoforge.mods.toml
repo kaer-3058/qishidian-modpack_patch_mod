@@ -1,0 +1,34 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "createpkgfix"
+version = "1.0.0"
+displayName = "Create Package Attack Recursion Fix"
+description = "Fixes a server-side StackOverflowError caused by Tinkers' Construct weapons attacking a Create package. Create's PackageEntity.hurt() calls NeoForge's CommonHooks.onPlayerAttackTarget(player, this) from inside hurt(); that hook calls ItemStack.getItem().onLeftClickEntity(), and Tinkers' modifiable weapons deal their damage inside onLeftClickEntity (ToolAttackUtil.performAttack -> target.hurt), so hurt -> hook -> onLeftClickEntity -> hurt recurses until the stack overflows (170 frames in the report). This mod wraps PackageEntity.hurt with a per-entity re-entrancy guard: the outer call applies damage as usual, and the recursive re-entrant call is discarded, which breaks the loop. No damage values or other Create behaviour are changed."
+authors = "createpkgfix"
+
+[[mixins]]
+config = "createpkgfix.mixins.json"
+
+[[dependencies.createpkgfix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.createpkgfix]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.createpkgfix]]
+modId = "create"
+type = "required"
+versionRange = "[6,)"
+ordering = "AFTER"
+side = "BOTH"

@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.voidscapefix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "DonatorHandlerMixin",
+    "ModUpdateURLInterceptorMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

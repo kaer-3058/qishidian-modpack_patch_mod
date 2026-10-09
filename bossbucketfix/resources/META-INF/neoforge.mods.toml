@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "bossbucketfix"
+version = "1.0.0"
+displayName = "Boss Damage Bucket Reentrancy Fix"
+description = "Fixes Cataclysm boss damage being accounted twice when another mod cancels LivingEntity.hurt and replays it (GokiSkills fencing): the per-hit damage bucket was charged twice, so DamageCap - amount was applied and stronger weapons dealt LESS damage (and 0.1 at/above the cap)."
+authors = "bossbucketfix"
+
+[[mixins]]
+config = "bossbucketfix.mixins.json"
+
+[[dependencies.bossbucketfix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.bossbucketfix]]
+modId = "cataclysm"
+type = "required"
+versionRange = "[3.0,)"
+ordering = "AFTER"
+side = "BOTH"

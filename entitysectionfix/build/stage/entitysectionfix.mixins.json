@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.entitysectionfix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntitySectionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "entitysectionfix"
+version = "1.0.0"
+displayName = "Entity Section Snapshot Fix"
+description = "Fixes a server-side ConcurrentModificationException in PersistentEntitySectionManager.updateChunkStatus (thrown from lambda$updateChunkStatus$6) that crashes the dedicated server when a player leaves. EntitySection.getEntities() returns a live stream over the section's backing ArrayList while vanilla startTracking/stopTracking callbacks run; if a mod moves an entity out of that section during the iteration (entities sticking to moving sub-levels, maids teleporting to their owner), the ArrayList is structurally modified mid-iteration. This mod makes getEntities() return a snapshot stream instead, so all four vanilla loops iterate a stable copy. The AABB query overloads are untouched."
+authors = "entitysectionfix"
+
+[[mixins]]
+config = "entitysectionfix.mixins.json"
+
+[[dependencies.entitysectionfix]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.219,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.entitysectionfix]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1]"
+ordering = "NONE"
+side = "BOTH"
