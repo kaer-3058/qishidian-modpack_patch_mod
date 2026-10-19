@@ -28,3 +28,4 @@
 
 **tacznofire**：让TACZ原版枪械开不出火。
 
+![](https://s41.ax1x.com/2026/10/19/pn0U3TA.jpg)
