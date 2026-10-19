@@ -1,98 +1,73 @@
-# voidscapefix — 屏蔽虚空工艺（Voidscape）的全部联网请求
+# voidscapefix 修复记录（2026-10-09）
 
-**版本**：1.0.0　|　**产物**：`artifacts\voidscapefix-1.0.0.jar`（3,796 字节）
-**针对**：`Voidscape-1.21.1-1.9.588.jar`（1.21.1 / NeoForge 21.1.249）
+## 问题
 
----
-
-## 一、为什么需要它
-
-游戏卡死（不是崩溃）的线程快照证据：
+原补丁 `虚空工艺补丁 voidscapefix-1.0.0.jar`（3796 字节）里的 `ModUpdateURLInterceptorMixin`
+**从来没有生效过**。日志里每次都有一条：
 
 ```
-"Render thread" WAITING (parking)                    ← 渲染线程卡住 171 秒
-  at java.util.concurrent.CompletableFuture.join
-  at DonatorHandler.isDonator(DonatorHandler.java:33)
-  at DonatorSettings.lambda$postConstruct$1(DonatorSettings.java:44)
-  at ClientHooks.fireClientTickPre                   ← 每次客户端 tick 都会走
-  at Minecraft.tick
+[mixin/] Mixin apply for mod voidscapefix failed voidscapefix.mixins.json:ModUpdateURLInterceptorMixin
+org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException:
+    Found cancellable @Inject targetting a constructor in injector
+    tamaized/voidscape/network/ModUpdateURLInterceptor::voidscapefix$noUpdateUrlInjection
 ```
 
-它在等的线程：
+原因：Mixin **不允许对构造函数做"可取消"的 `@Inject`**（构造函数没有返回值，取消不了）。
+所以这个注入每次都在模组加载阶段失败；NeoForge 只记一条 WARN 然后跳过，游戏照常启动
+（所以它跟 2026-10-09 21:55 的那次崩溃无关，那次是 Xaero 世界地图的 OpenGL 1281）。
 
-```
-"ForkJoinPool.commonPool-worker-4"
-  at sun.nio.ch.SocketDispatcher.read0                ← 卡在 socket 读取，永远读不完
-  at HttpsClient.afterConnect
-  at HttpURLConnection.getInputStream0
-  at DonatorHandler.run(DonatorHandler.java:52)
-```
+## 改法
 
-访问的地址（从 jar 字节码里提取）：
+不动构造函数，改成把构造函数里那句 `ModList...getMods().forEach(...)` **重定向成空操作**：
 
-```
-https://gh.tamaized.com/Tamaized/Voidscape/donator.properties
-https://gh.tamaized.com/Tamaized/Voidscape/update.json?m=%s&l=%s&v=%s
-```
-
-`DonatorHandler` 用 `CompletableFuture.supplyAsync` 异步拉捐赠者名单，却在**渲染线程**上
-`join()` 等结果。国内网络连得上 `gh.tamaized.com` 但读不到数据，HTTP 请求永不返回，
-`join()` 就永不返回 —— 游戏画面定住，只能强杀进程。
-
-## 二、这个 mod 做了什么
-
-三个注入点，全部在 `tamaized.voidscape.network` 包内（Voidscape 自己的类）：
-
-| 目标 | 方式 | 效果 |
-|---|---|---|
-| `DonatorHandler.run()` | HEAD 注入 + 直接返回 `Collections.emptyList()` | 根本不发 HTTP 请求；`CompletableFuture` 立即正常完成 |
-| `DonatorHandler.getDonators()` | HEAD 注入 + 直接返回 `Collections.emptyList()` | 双保险：任何调用者都不会执行 `join()` |
-| `ModUpdateURLInterceptor.<init>()` | HEAD 注入 + `cancel()` | 不再把 `update.json` 地址塞进 NeoForge 的 `ModInfo`，更新检查不会发生 |
-
-**为什么返回空列表是安全的**：`run()` 原本的 `catch` 分支就是
-`LOGGER.error(...); return Collections.emptyList();` —— "请求失败"和"没有捐赠者"在逻辑上
-本来就是同一个状态。所以这个改动只等于"把请求失败的路径提前固定下来"，不改变任何游戏逻辑。
-副作用仅是捐赠者名单功能失效（本来也加载不出来）。
-
-## 三、验证状态
-
-构建脚本自带三轮自动校验，全部通过：
-
-- **preflight**：用 `javap` 确认目标 jar 里确实存在 `run()`、`getDonators()` 并调用了
-  `CompletableFuture.join()`，以及 `ModUpdateURLInterceptor()` 无参构造存在。
-- **编译**：对着真实的 Voidscape / NeoForge / Mixin jar 编译（`javac 21.0.7`，9 个真实 jar），
-  没有手写 stub。
-- **描述符核对**：目标描述符 `()Ljava/util/List;`、`()Ljava/util/List;`、`()V` 与 jar 内
-  `javap -s` 输出逐字一致；注解里的 `method=[...]` 字符串已反编译确认。
-- **postflight**：确认打出的 jar 内含全部类、未误打包任何 `tamaized/*` 类，
-  且 mixin 类带有两个注入方法。
-
-注入点用 `require = 1`：一旦 Voidscape 升级导致方法改名，会在启动时**明确报错**，
-而不是静默失效让卡死问题悄悄回来。
-
-## 四、安装与卸载
-
-- **安装**：把 `artifacts\voidscapefix-1.0.0.jar` 放进
-  `.minecraft\versions\起始点\mods\` 即可，客户端和服务器都要放。
-- **卸载/回滚**：删掉这个 jar 就彻底恢复原状 —— 它不修改任何原 mod 文件，
-  也不生成配置文件。
-- **依赖**：`voidscape` 声明为 optional，若哪天移除了虚空工艺，这个 mod 会静默跳过
-  （mixin 配置 `"required": false`），不会报错。
-
-## 五、目录结构
-
-```
-voidscapefix\
-  build.ps1                              # 构建 + 三轮校验（ASCII-only，PS 5.1 安全）
-  build-meta.txt                         # 构建时间 / javac / classpath 记录
-  src\com\voidscapefix\
-    VoidscapeFix.java                    # @Mod 入口，只打一行日志
-    mixin\DonatorHandlerMixin.java       # 掐联网 + 防 join
-    mixin\ModUpdateURLInterceptorMixin.java
-  resources\
-    META-INF\neoforge.mods.toml
-    voidscapefix.mixins.json
-  artifacts\voidscapefix-1.0.0.jar
+```java
+@Mixin(targets = "tamaized.voidscape.network.ModUpdateURLInterceptor")
+public abstract class ModUpdateURLInterceptorMixin {
+    @Redirect(
+        method = "<init>()V",
+        at = @At(value = "INVOKE", target = "Ljava/util/List;forEach(Ljava/util/function/Consumer;)V"))
+    private static void voidscapefix$skipInstallingUpdateUrl(List<?> mods, Consumer<?> action) {
+        // 不遍历 → 不把 update.json 地址写进 NeoForge 的 ModInfo
+    }
+}
 ```
 
-重新构建：`pwsh -NoProfile -File 相关文件\DeepSeek写的mod\voidscapefix\build.ps1`
+* 目标类用**字符串**写法（`targets = "..."`），没有硬引用虚空工艺的类，卸载它也不会报错；
+* 该类构造函数只做这一件事（已用 javap 确认），拦掉 forEach 不影响任何其它功能。
+
+## 目录内容
+
+| 路径 | 说明 |
+|---|---|
+| `src\com\voidscapefix\mixin\ModUpdateURLInterceptorMixin.java` | 修好后的源码 |
+| `artifacts\虚空工艺补丁 voidscapefix-1.0.0.jar` | 编译好的修复版（3286 字节） |
+| `旧版备份\虚空工艺补丁 voidscapefix-1.0.0.jar` | 原来的失败版本（3796 字节），想还原就覆盖回去 |
+| `build.ps1` | 一键重新编译 + 打包 |
+
+已安装位置：`.minecraft\versions\起始点\mods\虚空工艺补丁 voidscapefix-1.0.0.jar`
+
+## 重新编译
+
+```
+pwsh -NoProfile -File build.ps1
+```
+
+脚本做的事：用 `旧版备份` 里的原始 jar 当骨架解包 → 用 JDK 21 编译 `src` 覆盖进去 →
+重新打包到 `artifacts`。
+
+**必须加 `-proc:none`**：Mixin 自带的注解处理器会崩（缺 ASM），编译不需要它。
+其余文件（`DonatorHandlerMixin.class`、`voidscapefix.mixins.json`、`neoforge.mods.toml`）保持原样。
+
+## 验证方法
+
+启动一次游戏后看 `logs\debug.log`：
+
+* 不再出现 `Mixin apply for mod voidscapefix failed`；
+* 出现 `Mixing ModUpdateURLInterceptorMixin ... into tamaized.voidscape.network.ModUpdateURLInterceptor` 且后面没有失败提示。
+
+## 附注
+
+* 补丁里另一个 mixin（`DonatorHandlerMixin`，挡掉 DonatorHandler 那一下网络读取）本来就是好的，
+  真正防"网络卡死"的是它；这次只修了失败的这一个。
+* 打包发布用的 `起始点 1.0.1 beta.zip` 里 `overrides/mods/` 装的还是旧版（3796 字节），
+  下次打包前记得换成修复版。

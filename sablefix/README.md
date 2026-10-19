@@ -1,8 +1,12 @@
-# Sable Fix — 修复 Sable 2.0.5 退出世界必崩的 NPE
+# Sable Fix — 两个 Sable 客户端崩溃的补丁
 
-**问题 mod**：`sable-neoforge-1.21.1-2.0.5.jar`（modId `sable`）
-**崩溃报告**：`crash-2026-10-02_02.22.12-client.txt`
-**修复 mod**：`sablefix-1.0.0.jar`（2.4 KB，无依赖，不打包任何桩类）
+**问题 mod**：`sable-neoforge-1.21.1-2.0.5.jar` / `sable-neoforge-1.21.1-2.0.6.jar`（modId `sable`）
+**修复 mod**：`sablefix-1.0.1.jar`（4.6 KB，无依赖，不打包任何桩类）
+
+| 版本 | 修的 bug | 崩溃报告 |
+|---|---|---|
+| 1.0.0 | Sable 2.0.5 退出世界必崩的 NPE | `crash-2026-10-02_02.22.12-client.txt` |
+| 1.0.1 | Sable 2.0.6 在子层级(plot)里被卸载区块必断线 | `disconnect-2026-10-14_11.53.03-client.txt`、`…11.53.42-client.txt` |
 
 ---
 
@@ -194,3 +198,91 @@ javac -encoding UTF-8 --release 21 -nowarn -proc:none `
    > `renderLevel`）必然 NPE 崩溃。修法：调用前判空，或在 `getTrackingSubLevel` 内
    > `if (entity == null) return null;`（调用方 `if (standingSubLevel != null ...)`
    > 的 else 分支会正确处理）。
+
+---
+
+# 1.0.1 新增：修复 Sable 2.0.6 在子层级里被卸载区块必断线
+
+## 一、现象
+
+两份报告（`disconnect-2026-10-14_11.53.03-client.txt` / `…11.53.42-client.txt`，相隔 39 秒）是同一个异常：
+
+```
+Description: Packet handling error
+java.lang.UnsupportedOperationException: Cannot drop chunks in plot
+  at ClientChunkCache.handler$jkn000$sable$drop(ClientChunkCache.java:4088)
+  at ClientChunkCache.drop(ClientChunkCache.java)
+  at ClientPacketListener.handleForgetLevelChunk(ClientPacketListener.java:781)
+  at ClientboundForgetLevelChunkPacket.handle(ClientboundForgetLevelChunkPacket.java:27)
+```
+
+## 二、根因（反编译 sable-neoforge-1.21.1-2.0.6.jar）
+
+`dev/ryanhcode/sable/mixin/plot/ClientChunkCacheMixin.drop`：
+
+```java
+private void drop(ChunkPos pos, CallbackInfo ci) {
+    SubLevelContainer c = sable$getPlotContainer();
+    if (c.inBounds(pos)) {
+        ci.cancel();                                                            // ①
+        throw new UnsupportedOperationException("Cannot drop chunks in plot");  // ②
+    }
+}
+```
+
+① 已经取消了这次丢弃（区块本来就保住了），② 是多余的。异常抛在**网络包处理线程**里，
+被主循环当成包处理失败 → 直接断开连接。
+
+触发条件：**人待在 Sable 子层级(plot)内部**时，服务端发来"忘记区块"包，且该位置落在 plot 边界内。
+所以进/出 Sable 载具、站在船上时最容易中招。
+
+2.0.6 是 1.21.1 上的最新版（Modrinth 版本接口核对过），上游未修 —— 只能自己打补丁。
+
+## 三、修法
+
+只包住 `handleForgetLevelChunk` 里对 `ClientChunkCache.drop` 的那一次调用：
+
+```java
+@Mixin(ClientPacketListener.class)
+public abstract class ClientPacketListenerMixin {
+    @Redirect(
+        method = "handleForgetLevelChunk(Lnet/minecraft/network/protocol/game/ClientboundForgetLevelChunkPacket;)V",
+        at = @At(value = "INVOKE",
+                 target = "Lnet/minecraft/client/multiplayer/ClientChunkCache;drop(Lnet/minecraft/world/level/ChunkPos;)V"),
+        require = 0)
+    private void sablefix$dropChunkSafely(ClientChunkCache cache, ChunkPos pos) {
+        try { cache.drop(pos); }
+        catch (UnsupportedOperationException e) {
+            if (!"Cannot drop chunks in plot".equals(e.getMessage())) { throw e; }
+            SableFix.reportPlotDropOnce();
+        }
+    }
+}
+```
+
+只吞 message 一字不差的这一个异常，其它异常原样抛出；只动这一个调用点，
+其它地方（ClientLevel 卸载、视距变化等）的 `drop` 调用完全不受影响。
+
+mixin 放在 `sablefix.mixins.json` 的 **`"client"`** 段，专用服务端上永远不会加载。
+
+## 四、验证
+
+进服务器 → 进/出 Sable 子层级（上船、进出载具）→ 看 `logs\latest.log`：
+
+- 看到 `[sablefix] 拦下 Sable 的 UnsupportedOperationException("Cannot drop chunks in plot") —— 子层级里不再被踢出服务器，修复已生效。`
+  → ✅ 修复生效
+- 没看到但也没断线 → 这次没走到那条路径
+- **又断线** → mixin 没应用，去看 `latest.log` 里的 mixin 警告
+
+## 五、构建
+
+```powershell
+& "…\相关文件\DeepSeek写的mod\sablefix\build.ps1"
+```
+
+脚本先做前置校验：原版两个方法的签名、`handleForgetLevelChunk` 里 `ClientChunkCache.drop`
+恰好被调用一次、**你实际在用的那个 Sable jar 里那句异常还在**；编译后做后置校验：
+mixin 带对了 handler/target/字面量、mixins.json 是 client-only、toml 是 1.0.1 +
+`displayTest = "IGNORE_ALL_VERSION"`。产物 `artifacts\sablefix-1.0.1.jar`。
+
+1.0.0 那套手写桩类（`src\net`、`src\dev`）不再参与编译（改用真实 jar），但依旧不许进 jar。

@@ -1,37 +1,38 @@
 package com.voidscapefix.mixin;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import tamaized.voidscape.network.ModUpdateURLInterceptor;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * 让 Voidscape 不再把自己的更新检查地址塞进 NeoForge 的 {@code ModInfo}。
+ * 目的：不让 Voidscape 把它的更新检查地址（https://gh.tamaized.com/Tamaized/Voidscape/update.json）
+ * 装进 NeoForge 的 ModInfo 里。
  *
- * <p>原始字节码（1.21.1-1.9.588）构造函数里做两件事：
- * <ol>
- *   <li>反射拿到 {@code ModInfo.updateJSONURL} 字段的 setter（MethodHandle）</li>
- *   <li>对 voidscape 的每个 ModInfo 调用
- *       {@code invokeExact(modInfo, Optional.of(URI.create(
- *       "https://gh.tamaized.com/Tamaized/Voidscape/update.json?m=%s&l=%s&v=%s").toURL()))}</li>
- * </ol>
+ * Voidscape 的 ModUpdateURLInterceptor 构造函数里做的是：
+ *     ModList.get().getModFileById("voidscape").getMods().forEach(modInfo -> { ... 写入 updateJSONURL ... });
+ * 也就是说，只要那句 forEach 不执行，更新地址就装不进去。
  *
- * <p>它在 HEAD 直接取消：这个类没有被其它任何类引用，字段保持 null 也不会有人去读，
- * 所以取消构造是安全的。取消后 NeoForge 端不存在 voidscape 的更新检查 URL，
- * 该请求也就不会发生。
+ * 旧版补丁的写法是对构造函数用 cancellable 的 @Inject，而 Mixin 明确禁止对构造函数做可取消注入
+ * （InvalidInjectionException: Found cancellable @Inject targetting a constructor），
+ * 所以注入一直失败、补丁从来没生效。
+ *
+ * 现在改成把构造函数里的 List.forEach(...) 重定向成空操作：不执行 forEach，自然不会写入更新地址。
+ * 用 targets = "..." 字符串而不是直接引用类，这样 Voidscape 不在时也不会因为这个补丁报错。
  */
-@Mixin(ModUpdateURLInterceptor.class)
+@Mixin(targets = "tamaized.voidscape.network.ModUpdateURLInterceptor")
 public abstract class ModUpdateURLInterceptorMixin {
 
-    @Inject(
+    @Redirect(
             method = "<init>()V",
-            at = @At("HEAD"),
-            cancellable = true,
-            require = 1
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/List;forEach(Ljava/util/function/Consumer;)V"
+            )
     )
-    private void voidscapefix$noUpdateUrlInjection(CallbackInfo ci) {
-        ci.cancel();
+    private static void voidscapefix$skipInstallingUpdateUrl(List<?> mods, Consumer<?> action) {
+        // 故意留空：不遍历模组列表，也就不会把 update.json 地址写进 ModInfo
     }
 }

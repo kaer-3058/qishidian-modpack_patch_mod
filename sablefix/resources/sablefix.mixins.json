@@ -6,6 +6,9 @@
   "mixins": [
     "ActiveSableCompanionMixin"
   ],
+  "client": [
+    "ClientPacketListenerMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

@@ -1,0 +1,47 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "tacznofire"
+version = "1.0.0"
+displayName = "TACZ No Fire"
+authors = "DeepSeek"
+description = '''
+Stops TACZ guns from firing, by default only the guns of the built-in gun pack
+(tacz_default_gun, gun id namespace "tacz": ak47, m4a1, deagle, ... 54 guns).
+
+TACZ posts a cancellable GunShootEvent before it shoots and checks isCanceled() right
+afterwards (server: LivingEntityShoot#shoot, client: LocalPlayerShoot#shoot), returning
+ShootResult.FORGE_EVENT_CANCEL when cancelled. This mod only listens to that event and
+cancels it, so the gun does not fire at all: no bullet, no sound, no ammo consumed.
+No mixins, no bytecode patching.
+
+Which guns are blocked is read from config/tacznofire.txt (created on first run, reloaded
+whenever the file changes):
+  mode = default_pack | all
+  block_namespaces = tacz[,other_pack_namespace...]
+  block_guns = tacz:ak47[,other_gun_id...]
+  log_blocked = true|false
+'''
+
+[[dependencies.tacznofire]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.tacznofire]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.22)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.tacznofire]]
+modId = "tacz"
+type = "required"
+versionRange = "[1.0.0,)"
+ordering = "NONE"
+side = "BOTH"

@@ -4,10 +4,13 @@ license = "MIT"
 
 [[mods]]
 modId = "sablefix"
-version = "1.0.0"
+version = "1.0.1"
 displayName = "Sable Fix"
-description = "Fixes a NullPointerException in Sable 2.0.5 that crashes the game every time you leave a world. Sable's GameRendererMixin reads minecraft.player (null after disconnecting) and passes it straight into ActiveSableCompanion.getTrackingSubLevel, which dereferences it unconditionally."
+description = "Two client-side patches for Sable. (1) Fixes the NullPointerException in Sable 2.0.5 that crashes the game every time you leave a world (ActiveSableCompanion.getTrackingSubLevel dereferences minecraft.player, which is null after disconnecting). (2) Fixes the disconnect in Sable 2.0.6 when the server forgets a chunk while you are inside a sub-level plot: Sable's plot ClientChunkCacheMixin cancels the drop and then throws UnsupportedOperationException(\"Cannot drop chunks in plot\"), which escapes the packet handler and kills the connection."
 authors = "sablefix"
+# 纯客户端补丁：装了它的客户端要能进没装它的服务器，没装它的客户端也要能进装了它的服务器，
+# 所以两个方向都不做版本校验（和 JEI 的 displayTest="IGNORE_SERVER_VERSION" 同一个用途，这里更彻底）。
+displayTest = "IGNORE_ALL_VERSION"
 
 [[mixins]]
 config = "sablefix.mixins.json"
